@@ -2,7 +2,7 @@
 
 import asyncio
 import pytest
-from mcp_trace32.state import T32State
+from debugforge.state import T32State
 
 
 def test_state_not_connected_by_default(disconnected_state):

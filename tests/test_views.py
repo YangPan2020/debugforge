@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import MagicMock
-from mcp_trace32.state import T32State
+from debugforge.state import T32State
 
 
 def test_connected_state_has_get_window_content(connected_state, mock_debugger):

@@ -1,11 +1,11 @@
-"""Shared test fixtures for mcp-trace32."""
+"""Shared test fixtures for debugforge."""
 
 from __future__ import annotations
 
 from unittest.mock import MagicMock
 import pytest
 
-from mcp_trace32.state import T32State
+from debugforge.state import T32State
 
 
 class MockDebugger:

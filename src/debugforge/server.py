@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 
-from mcp_trace32.state import state
+from debugforge.state import state
 
 
 @asynccontextmanager
@@ -30,22 +30,22 @@ async def lifespan(server: FastMCP):
 
 
 mcp = FastMCP(
-    "mcp-trace32",
-    instructions="MCP server for Lauterbach TRACE32 debugger — enables AI agents to perform hardware debugging",
+    "debugforge",
+    instructions="DebugForge — AI-powered debugging for Lauterbach TRACE32. 46 tools for complete hardware debug automation.",
     lifespan=lifespan,
 )
 
-from mcp_trace32.tools import connection  # noqa: E402, F401
-from mcp_trace32.tools import execution  # noqa: E402, F401
-from mcp_trace32.tools import memory  # noqa: E402, F401
-from mcp_trace32.tools import registers  # noqa: E402, F401
-from mcp_trace32.tools import breakpoints  # noqa: E402, F401
-from mcp_trace32.tools import variables  # noqa: E402, F401
-from mcp_trace32.tools import symbols  # noqa: E402, F401
-from mcp_trace32.tools import commands  # noqa: E402, F401
-from mcp_trace32.tools import views  # noqa: E402, F401
-from mcp_trace32.tools import breakpoints_advanced  # noqa: E402, F401
-from mcp_trace32.tools import debug_advanced  # noqa: E402, F401
+from debugforge.tools import connection  # noqa: E402, F401
+from debugforge.tools import execution  # noqa: E402, F401
+from debugforge.tools import memory  # noqa: E402, F401
+from debugforge.tools import registers  # noqa: E402, F401
+from debugforge.tools import breakpoints  # noqa: E402, F401
+from debugforge.tools import variables  # noqa: E402, F401
+from debugforge.tools import symbols  # noqa: E402, F401
+from debugforge.tools import commands  # noqa: E402, F401
+from debugforge.tools import views  # noqa: E402, F401
+from debugforge.tools import breakpoints_advanced  # noqa: E402, F401
+from debugforge.tools import debug_advanced  # noqa: E402, F401
 
 
 def main():

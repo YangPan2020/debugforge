@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from mcp_trace32.server import mcp
-from mcp_trace32.state import state
+from debugforge.server import mcp
+from debugforge.state import state
 
 
 @mcp.tool()

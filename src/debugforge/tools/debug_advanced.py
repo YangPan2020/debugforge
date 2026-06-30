@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from mcp_trace32.server import mcp
-from mcp_trace32.state import state
-from mcp_trace32.tools.views import _read_window
+from debugforge.server import mcp
+from debugforge.state import state
+from debugforge.tools.views import _read_window
 
 
 @mcp.tool()
