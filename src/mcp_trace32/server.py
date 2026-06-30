@@ -44,6 +44,8 @@ from mcp_trace32.tools import variables  # noqa: E402, F401
 from mcp_trace32.tools import symbols  # noqa: E402, F401
 from mcp_trace32.tools import commands  # noqa: E402, F401
 from mcp_trace32.tools import views  # noqa: E402, F401
+from mcp_trace32.tools import breakpoints_advanced  # noqa: E402, F401
+from mcp_trace32.tools import debug_advanced  # noqa: E402, F401
 
 
 def main():
