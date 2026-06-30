@@ -41,7 +41,9 @@ async def set_breakpoint(
         }
         bp_impl = impl_map.get(impl, "")
 
-        cmd = f"Break.Set {address} /{bp_type}{bp_impl}"
+        cmd = f"Break.Set {address} /{bp_type}"
+        if bp_impl:
+            cmd += f" {bp_impl}"
         dbg.cmd(cmd)
         return f"Breakpoint set: {type} @ {address} ({impl})"
     except ConnectionError:

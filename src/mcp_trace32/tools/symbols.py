@@ -21,10 +21,10 @@ async def symbol_by_name(name: str) -> str:
         sym = dbg.symbol.query_by_name(name)
         addr = sym.address
         addr_val = addr.value if addr else None
-        if addr_val is not None:
+        if addr_val is not None and addr_val != 0xFFFFFFFF:
             return f"Symbol '{name}': address = 0x{addr_val:08X}"
         else:
-            return f"Symbol '{name}' found but address unavailable"
+            return f"Symbol '{name}' not found (no matching debug symbol loaded)"
     except ConnectionError:
         raise
     except Exception as e:

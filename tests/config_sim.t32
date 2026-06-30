@@ -1,0 +1,11 @@
+; TRACE32 config for MCP testing - TriCore with API port
+OS=
+SYS=/opt/t32_202509
+TMP=/tmp
+
+SCREEN=
+FONT=SMALL
+
+RCL=NETTCP
+PORT=20000
+PACKLEN=4096

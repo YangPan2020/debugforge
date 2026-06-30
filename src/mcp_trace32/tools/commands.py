@@ -43,7 +43,7 @@ async def run_practice(script: str, timeout: float = 60.0) -> str:
     """
     dbg = state.require_connection()
     try:
-        dbg.cmm(f"DO {script}", timeout=timeout)
+        dbg.cmm(script, timeout=timeout)
         return f"PRACTICE script completed: {script}"
     except TimeoutError:
         return f"PRACTICE script timed out after {timeout}s: {script}"
