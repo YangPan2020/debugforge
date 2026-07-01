@@ -127,10 +127,7 @@ Then restart TRACE32 PowerView.
 
 ### MCP Client Setup
 
-<details>
-<summary><strong>Claude Code</strong></summary>
-
-Add to `.claude/settings.json`:
+All MCP-compatible AI agents use the same configuration — register `debugforge` as an MCP server:
 
 ```json
 {
@@ -142,10 +139,17 @@ Add to `.claude/settings.json`:
 }
 ```
 
-</details>
+| Agent | Config File | Notes |
+|-------|-------------|-------|
+| Claude Code | `.claude/settings.json` | Also supports `env` field for auto-connect |
+| Gemini CLI | `.gemini/settings.json` | |
+| GitHub Copilot | `.vscode/mcp.json` | VS Code extension |
+| Antigravity CLI | MCP config | |
+| Codex CLI | MCP config | |
+| DeepSeek | MCP config | |
+| Hermes Agent | MCP config | |
 
-<details>
-<summary><strong>Claude Code (with auto-connect)</strong></summary>
+**Auto-connect example** (skip manual `connect()` call):
 
 ```json
 {
@@ -160,15 +164,6 @@ Add to `.claude/settings.json`:
   }
 }
 ```
-
-</details>
-
-<details>
-<summary><strong>Other MCP Clients</strong></summary>
-
-Any MCP-compatible client can use DebugForge. Configure the command as `debugforge` with stdio transport.
-
-</details>
 
 ### Project Configuration (`debugforge.toml`)
 
@@ -372,7 +367,12 @@ AI Agent workflow:
 | Agent | Status | Configuration |
 |-------|--------|---------------|
 | [Claude Code](https://claude.com/claude-code) | ✅ Tested | `.claude/settings.json` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ Compatible | `.gemini/settings.json` |
+| [GitHub Copilot](https://github.com/features/copilot) | ✅ Compatible | `.vscode/mcp.json` |
 | [Codex CLI](https://github.com/openai/codex) | ✅ Compatible | MCP stdio transport |
+| [Antigravity CLI](https://github.com/antigravity-official/antigravity-cli) | ✅ Compatible | MCP stdio transport |
+| [DeepSeek](https://www.deepseek.com/) | ✅ Compatible | MCP stdio transport |
+| [Hermes Agent](https://github.com/hermes-agent/hermes) | ✅ Compatible | MCP stdio transport |
 | [Qwen Agent](https://github.com/QwenLM/Qwen-Agent) | ✅ Compatible | MCP stdio transport |
 | Any MCP Client | ✅ Compatible | Standard MCP protocol |
 
