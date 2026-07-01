@@ -43,6 +43,9 @@ from debugforge.tools import commands  # noqa: E402, F401
 from debugforge.tools import views  # noqa: E402, F401
 from debugforge.tools import breakpoints_advanced  # noqa: E402, F401
 from debugforge.tools import debug_advanced  # noqa: E402, F401
+from debugforge.tools import build  # noqa: E402, F401
+from debugforge.tools import workflow  # noqa: E402, F401
+from debugforge.tools import skills  # noqa: E402, F401
 
 
 def main():

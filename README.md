@@ -25,9 +25,10 @@
 
 ## Highlights
 
-- **47 MCP Tools** — Full TRACE32 access for AI agents: execution control, breakpoints, memory, registers, variables, symbols, and more
-- **Autonomous Debugging** — AI agents can independently connect to your target, reproduce issues, locate root causes, and suggest fixes
-- **Project-Aware** — Configure once via `debugforge.toml`, your AI agent automatically knows your ELF paths, flash scripts, and TRACE32 setup
+- **58 MCP Tools** — Full TRACE32 access for AI agents: execution control, breakpoints, memory, registers, variables, symbols, build, and more
+- **Autonomous Debug Loop** — AI agents can build, flash, debug, locate root causes, fix code, and re-verify — the full edit-compile-debug cycle
+- **Debug Skills** — Accumulate reusable debugging knowledge; AI agents learn from past issues and apply proven strategies
+- **Project-Aware** — Configure once via `debugforge.toml`, your AI agent automatically knows your ELF paths, flash scripts, toolchain, and TRACE32 setup
 - **Real Hardware** — Battle-tested on TC397 TriCore via USB. Your AI agent controls actual silicon, not a simulator
 - **Advanced Breakpoints** — Conditional, data watchpoints, hit-count, task-specific, action triggers, and temporary breakpoints
 - **Deep Inspection** — AI agents can read call stacks with locals, expand structs, view disassembly, inspect peripherals
@@ -40,7 +41,7 @@
 ┌─────────────────┐         MCP (stdio)         ┌──────────────┐       PYRCL/TCP       ┌──────────────┐
 │                 │◄───────────────────────────►│              │◄─────────────────────►│              │
 │   AI Agent      │   JSON-RPC tool calls        │  DebugForge  │   Remote Control API  │   TRACE32    │
-│  (Claude Code,  │   (47 debugging tools)       │  MCP Server  │   (lauterbach-trace32 │  PowerView   │
+│  (Claude Code,  │   (58 debugging tools)       │  MCP Server  │   (lauterbach-trace32 │  PowerView   │
 │   Codex, etc.)  │                              │              │    -rcl)              │              │
 │                 │◄───────────────────────────►│              │◄─────────────────────►│              │
 └─────────────────┘         Results              └──────────────┘       Hardware         └──────┬───────┘
@@ -183,9 +184,23 @@ auto_connect = true                            # Connect when server starts
 elf = "output/build/firmware.elf"              # ELF file with debug symbols
 map = "output/build/firmware.map"              # MAP file (optional)
 
+[toolchain]
+compiler_path = "/opt/gcc-arm/bin"             # Compiler toolchain path
+objdump = "arm-none-eabi-objdump"              # Disassembly tool
+readelf = "arm-none-eabi-readelf"              # ELF analysis tool
+nm = "arm-none-eabi-nm"                        # Symbol table tool
+
+[build]
+command = "make -j8"                           # Build command
+clean_command = "make clean"                   # Clean command
+working_dir = "."                              # Build working directory
+
 [scripts]
 flash = "tools/Trace32/flash.cmm"             # Flash programming script
 init = "tools/Trace32/startup.cmm"            # Target init script
+
+[debug]
+skills_dir = ".debugforge/skills"              # Debug knowledge base directory
 ```
 
 All relative paths are resolved from the directory containing `debugforge.toml`.
@@ -207,7 +222,7 @@ Environment variables override `debugforge.toml` values (highest priority):
 
 **Priority:** Environment Variables > `debugforge.toml` > Built-in Defaults
 
-## Available Tools (47)
+## Available Tools (58)
 
 ### Connection & Configuration
 
@@ -311,6 +326,32 @@ Environment variables override `debugforge.toml` values (highest priority):
 | `get_task_stack` | Get stack info for OS tasks |
 | `get_peripheral_view` | View peripheral register contents |
 
+### Build & Binary Analysis
+
+| Tool | Description |
+|------|-------------|
+| `build_project` | Execute the configured build command |
+| `clean_project` | Execute the configured clean command |
+| `disassemble` | Disassemble a function or address range (objdump) |
+| `analyze_map` | Analyze MAP file for memory layout and symbols |
+| `analyze_elf` | Analyze ELF file structure (readelf) |
+
+### Workflow Orchestration
+
+| Tool | Description |
+|------|-------------|
+| `flash_and_run` | Flash firmware → reset → run to breakpoint |
+| `build_flash_run` | Build → flash → reset → run (full edit-compile-debug loop) |
+
+### Debug Skills (Knowledge Base)
+
+| Tool | Description |
+|------|-------------|
+| `list_debug_skills` | List all debug skills in the knowledge base |
+| `get_debug_skill` | Get full content of a specific debug skill |
+| `search_debug_skills` | Search skills by keywords matching symptoms |
+| `save_debug_skill` | Save a new debug skill from a successful debug session |
+
 ## Usage Examples
 
 ### Basic Debug Session
@@ -362,6 +403,25 @@ AI Agent workflow:
   → "Overflow at process_packet+0x4C: memcpy writes 320 bytes into 256-byte buffer"
 ```
 
+### Autonomous Fix Cycle
+
+```
+You: "The watchdog is resetting the MCU. Find and fix the root cause."
+
+AI Agent workflow:
+  1. search_debug_skills("watchdog timeout reset")  → finds matching skill
+  2. get_debug_skill("watchdog-timeout")            → reads proven strategy
+  3. build_flash_run()                              → build + flash + run to main
+  4. set_conditional_breakpoint("wdt_reset_handler", condition="reset_count > 0")
+  5. go()                                           → runs until watchdog fires
+  6. get_callstack()                                → finds stuck function
+  7. get_locals()                                   → sees infinite loop condition
+  ... fixes code ...
+  8. build_flash_run()                              → rebuild, reflash, verify
+  9. save_debug_skill(...)                          → captures new knowledge
+  → "Fixed: infinite loop in spi_wait_ready() when peripheral clock is disabled"
+```
+
 ## Supported AI Agents
 
 | Agent | Status | Configuration |
@@ -405,11 +465,38 @@ ruff format src/ tests/
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Autonomous Debug Workflow
+
+DebugForge supports a full autonomous debug loop. Include [`debugforge-workflow.md`](debugforge-workflow.md) in your AI agent's instructions to enable:
+
+```
+Problem Description → Understand Code → Build → Flash → Debug → Locate Bug → Fix → Rebuild → Verify → Done
+```
+
+**Phases:**
+1. **Understand** — Parse symptoms, search debug skills for matching patterns
+2. **Analyze** — Read source, inspect MAP/ELF, disassemble critical functions
+3. **Debug on Hardware** — Build/flash/run, set breakpoints, inspect state
+4. **Fix & Verify** — Modify code, rebuild, reflash, confirm fix
+5. **Capture Knowledge** — Save new debug patterns as reusable skills
+
+### Debug Skills
+
+Debug skills are reusable Markdown files in `.debugforge/skills/` that capture proven debugging strategies:
+
+```bash
+.debugforge/skills/
+├── stack-overflow.md
+├── hardfault-analysis.md
+└── peripheral-init-failure.md
+```
+
+AI agents search these automatically when debugging, and save new skills after resolving novel issues.
+
 ## Roadmap
 
 - [ ] HTTP/SSE transport for remote debugging
 - [ ] Auto-start/manage TRACE32 lifecycle
-- [ ] ELF/MAP static analysis tools
 - [ ] Multi-core debugging (multiple simultaneous connections)
 - [ ] Trace data analysis and visualization
 - [ ] Flash programming tools (dedicated, beyond script execution)

@@ -22,6 +22,19 @@ auto_connect = false                       # Connect automatically when server s
 elf = "output/build/firmware.elf"          # ELF file with debug symbols
 map = "output/build/firmware.map"          # MAP file (optional)
 
+[toolchain]
+# Cross-compiler toolchain settings (used for disassembly and ELF analysis)
+compiler_path = "/opt/hightec/toolchains/tricore/v4.9.3.0/bin"
+objdump = "tricore-elf-objdump"            # Disassembly tool
+readelf = "tricore-elf-readelf"            # ELF analysis tool
+nm = "tricore-elf-nm"                      # Symbol table tool
+
+[build]
+# Build system configuration
+command = "make -j8"                       # Build command
+clean_command = "make clean"               # Clean command
+working_dir = "."                          # Build working directory
+
 [scripts]
 # PRACTICE script paths (used by AI agent for common operations)
 flash = "tools/Trace32/flash.cmm"          # Flash programming script
@@ -29,3 +42,7 @@ init = "tools/Trace32/startup.cmm"         # Target initialization / reset scrip
 # Add your own scripts as needed:
 # reset = "tools/Trace32/reset.cmm"
 # test = "tools/Trace32/run_tests.cmm"
+
+[debug]
+# Debug knowledge base
+skills_dir = ".debugforge/skills"          # Directory for debug skill files

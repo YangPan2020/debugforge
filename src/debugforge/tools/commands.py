@@ -35,10 +35,30 @@ async def get_project_config() -> str:
     lines.append(f"  map: {config.map or '(not configured)'}")
     lines.append("")
 
+    if config.compiler_path or config.objdump:
+        lines.append("## Toolchain")
+        lines.append(f"  compiler_path: {config.compiler_path or '(not configured)'}")
+        lines.append(f"  objdump: {config.objdump or '(not configured)'}")
+        lines.append(f"  readelf: {config.readelf or '(not configured)'}")
+        lines.append(f"  nm: {config.nm or '(not configured)'}")
+        lines.append("")
+
+    if config.build_command:
+        lines.append("## Build")
+        lines.append(f"  command: {config.build_command}")
+        lines.append(f"  clean_command: {config.clean_command or '(not configured)'}")
+        lines.append(f"  working_dir: {config.build_working_dir or '(project root)'}")
+        lines.append("")
+
     if config.scripts:
         lines.append("## Scripts")
         for name, path in config.scripts.items():
             lines.append(f"  {name}: {path}")
+        lines.append("")
+
+    if config.skills_dir:
+        lines.append("## Debug Skills")
+        lines.append(f"  skills_dir: {config.skills_dir}")
         lines.append("")
 
     if config.config_dir:

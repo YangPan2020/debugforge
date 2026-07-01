@@ -36,6 +36,20 @@ class DebugForgeConfig:
     # Scripts (resolved to absolute)
     scripts: dict[str, str] = field(default_factory=dict)
 
+    # Toolchain settings
+    compiler_path: str = ""
+    objdump: str = ""
+    readelf: str = ""
+    nm: str = ""
+
+    # Build settings
+    build_command: str = ""
+    clean_command: str = ""
+    build_working_dir: str = ""
+
+    # Debug settings
+    skills_dir: str = ""
+
     # Base directory for resolving relative paths
     _base_dir: str = field(default="", repr=False)
 
@@ -115,6 +129,31 @@ def load_config(config_path: str | None = None) -> DebugForgeConfig:
         scripts_section = data.get("scripts", {})
         for key, val in scripts_section.items():
             cfg.scripts[key] = _resolve_path(val, base_dir)
+
+        # [toolchain]
+        tc_section = data.get("toolchain", {})
+        if "compiler_path" in tc_section:
+            cfg.compiler_path = _resolve_path(tc_section["compiler_path"], base_dir)
+        if "objdump" in tc_section:
+            cfg.objdump = tc_section["objdump"]
+        if "readelf" in tc_section:
+            cfg.readelf = tc_section["readelf"]
+        if "nm" in tc_section:
+            cfg.nm = tc_section["nm"]
+
+        # [build]
+        build_section = data.get("build", {})
+        if "command" in build_section:
+            cfg.build_command = build_section["command"]
+        if "clean_command" in build_section:
+            cfg.clean_command = build_section["clean_command"]
+        if "working_dir" in build_section:
+            cfg.build_working_dir = _resolve_path(build_section["working_dir"], base_dir)
+
+        # [debug]
+        debug_section = data.get("debug", {})
+        if "skills_dir" in debug_section:
+            cfg.skills_dir = _resolve_path(debug_section["skills_dir"], base_dir)
 
     # Environment variable overrides (highest priority)
     env_install = os.environ.get("T32_INSTALL_PATH", "")
