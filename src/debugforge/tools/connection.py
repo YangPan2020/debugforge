@@ -3,25 +3,28 @@
 from __future__ import annotations
 
 from debugforge.server import mcp
-from debugforge.state import state
+from debugforge.state import config, state
 
 
 @mcp.tool()
 async def connect(
-    node: str = "localhost",
-    port: int = 20000,
-    protocol: str = "TCP",
+    node: str = "",
+    port: int = 0,
+    protocol: str = "",
 ) -> str:
     """Connect to a running TRACE32 PowerView instance.
 
     Args:
-        node: TRACE32 host address (default: localhost)
-        port: TRACE32 API port (default: 20000)
-        protocol: Communication protocol - TCP or UDP (default: TCP)
+        node: TRACE32 host address (default from config or 'localhost')
+        port: TRACE32 API port (default from config or 20000)
+        protocol: Communication protocol - TCP or UDP (default from config or 'TCP')
 
     Returns:
         Connection status message with TRACE32 version info
     """
+    node = node or config.node
+    port = port or config.port
+    protocol = protocol or config.protocol
     try:
         result = await state.connect(node=node, port=port, protocol=protocol)
         return result

@@ -1,0 +1,31 @@
+# DebugForge Project Configuration
+#
+# Place this file as 'debugforge.toml' in your project root.
+# All relative paths are resolved from the directory containing this file.
+#
+# Environment variables (T32_INSTALL_PATH, T32_NODE, T32_PORT, etc.)
+# override these settings when set.
+
+[trace32]
+# TRACE32 installation directory (used for error hints and PYRCL wheel path)
+install_path = "/opt/t32"
+
+[connection]
+# TRACE32 Remote API connection settings
+node = "localhost"                         # TRACE32 host address
+port = 20000                               # API port (must match your .t32 config)
+protocol = "TCP"                           # TCP or UDP
+auto_connect = false                       # Connect automatically when server starts
+
+[project]
+# Build artifact paths (used by AI agent for loading symbols/firmware)
+elf = "output/build/firmware.elf"          # ELF file with debug symbols
+map = "output/build/firmware.map"          # MAP file (optional)
+
+[scripts]
+# PRACTICE script paths (used by AI agent for common operations)
+flash = "tools/Trace32/flash.cmm"          # Flash programming script
+init = "tools/Trace32/startup.cmm"         # Target initialization / reset script
+# Add your own scripts as needed:
+# reset = "tools/Trace32/reset.cmm"
+# test = "tools/Trace32/run_tests.cmm"

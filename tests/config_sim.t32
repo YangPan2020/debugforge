@@ -1,6 +1,7 @@
-; TRACE32 config for MCP testing - TriCore with API port
+; TRACE32 config for testing - API port enabled
+; Set SYS= to your TRACE32 installation directory (or use T32_INSTALL_PATH env var)
 OS=
-SYS=/opt/t32_202509
+SYS=/opt/t32
 TMP=/tmp
 
 SCREEN=

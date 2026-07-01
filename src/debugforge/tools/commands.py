@@ -3,7 +3,50 @@
 from __future__ import annotations
 
 from debugforge.server import mcp
-from debugforge.state import state
+from debugforge.state import config, state
+
+
+@mcp.tool()
+async def get_project_config() -> str:
+    """Get the current DebugForge project configuration.
+
+    Returns project-specific paths (ELF, MAP, scripts) and TRACE32 settings
+    loaded from debugforge.toml and environment variables. Call this at the
+    start of a debug session to learn about the project context.
+
+    Returns:
+        Formatted project configuration including paths and connection settings
+    """
+    lines = ["# DebugForge Project Configuration", ""]
+
+    lines.append("## TRACE32")
+    lines.append(f"  install_path: {config.t32_install_path or '(not configured)'}")
+    lines.append("")
+
+    lines.append("## Connection")
+    lines.append(f"  node: {config.node}")
+    lines.append(f"  port: {config.port}")
+    lines.append(f"  protocol: {config.protocol}")
+    lines.append(f"  auto_connect: {config.auto_connect}")
+    lines.append("")
+
+    lines.append("## Project")
+    lines.append(f"  elf: {config.elf or '(not configured)'}")
+    lines.append(f"  map: {config.map or '(not configured)'}")
+    lines.append("")
+
+    if config.scripts:
+        lines.append("## Scripts")
+        for name, path in config.scripts.items():
+            lines.append(f"  {name}: {path}")
+        lines.append("")
+
+    if config.config_dir:
+        lines.append(f"(loaded from: {config.config_dir}/debugforge.toml)")
+    else:
+        lines.append("(no config file found — using defaults and environment variables)")
+
+    return "\n".join(lines)
 
 
 @mcp.tool()

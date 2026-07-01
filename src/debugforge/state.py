@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from debugforge.config import DebugForgeConfig, load_config
+
 try:
     from lauterbach.trace32 import rcl as t32
     from lauterbach.trace32.rcl import Debugger
 except ImportError:
     t32 = None
     Debugger = None
+
+config: DebugForgeConfig = load_config()
 
 
 @dataclass
@@ -32,16 +36,21 @@ class T32State:
             )
         return self.debugger
 
-    async def connect(self, node: str = "localhost", port: int = 20000, protocol: str = "TCP") -> str:
+    async def connect(self, node: str = "", port: int = 0, protocol: str = "") -> str:
         if self.debugger is not None:
             return f"Already connected to TRACE32 at {self.node}:{self.port}"
 
         if t32 is None:
+            install_hint = config.t32_install_path or "$T32_INSTALL_PATH"
             raise ImportError(
                 "lauterbach-trace32-rcl package not installed. "
                 "Install from your TRACE32 installation: "
-                "pip install /opt/t32/demo/api/python/rcl/dist/lauterbach_trace32_rcl-*.whl"
+                f"pip install {install_hint}/demo/api/python/rcl/dist/lauterbach_trace32_rcl-*.whl"
             )
+
+        node = node or config.node
+        port = port or config.port
+        protocol = protocol or config.protocol
 
         self.debugger = t32.connect(node=node, port=port, protocol=protocol)
         self.node = node

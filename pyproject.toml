@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "debugforge"
 version = "0.1.0"
-description = "DebugForge — AI-powered debugging for Lauterbach TRACE32. MCP server enabling AI agents to perform hardware debugging."
+description = "DebugForge — MCP server that connects Lauterbach TRACE32 debuggers to AI agents for autonomous debugging."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "lixiang" },
+    { name = "YangPan" },
 ]
 keywords = ["mcp", "trace32", "lauterbach", "debugger", "embedded", "ai-agent", "debugforge"]
 classifiers = [
@@ -26,6 +26,7 @@ classifiers = [
 dependencies = [
     "mcp[cli]>=1.0.0",
     "lauterbach-trace32-rcl>=1.1.0",
+    "tomli>=1.0.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +39,6 @@ dev = [
 debugforge = "debugforge.server:main"
 
 [project.urls]
-Homepage = "https://github.com/lixiang/debugforge"
-Repository = "https://github.com/lixiang/debugforge"
-Issues = "https://github.com/lixiang/debugforge/issues"
+Homepage = "https://github.com/YangPan2020/debugforge"
+Repository = "https://github.com/YangPan2020/debugforge"
+Issues = "https://github.com/YangPan2020/debugforge/issues"

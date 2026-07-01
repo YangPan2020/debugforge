@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 
-from debugforge.state import state
+from debugforge.state import config, state
 
 
 @asynccontextmanager
 async def lifespan(server: FastMCP):
     """Manage server lifecycle — auto-connect if configured, cleanup on exit."""
-    auto_connect = os.environ.get("T32_AUTO_CONNECT", "false").lower() == "true"
-    if auto_connect:
-        node = os.environ.get("T32_NODE", "localhost")
-        port = int(os.environ.get("T32_PORT", "20000"))
-        protocol = os.environ.get("T32_PROTOCOL", "TCP")
+    if config.auto_connect:
         try:
-            await state.connect(node=node, port=port, protocol=protocol)
+            await state.connect(
+                node=config.node, port=config.port, protocol=config.protocol
+            )
         except Exception:
             pass
     try:
@@ -31,7 +28,7 @@ async def lifespan(server: FastMCP):
 
 mcp = FastMCP(
     "debugforge",
-    instructions="DebugForge — AI-powered debugging for Lauterbach TRACE32. 46 tools for complete hardware debug automation.",
+    instructions="DebugForge — MCP server bridging Lauterbach TRACE32 to AI agents. 47 tools for autonomous debugging: connect to target, inspect state, locate bugs, and drive fixes.",
     lifespan=lifespan,
 )
 
