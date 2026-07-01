@@ -82,7 +82,7 @@ async def list_breakpoints() -> str:
 
 @mcp.tool()
 async def delete_breakpoint(address: str) -> str:
-    """Delete a breakpoint at the specified address.
+    """Delete a breakpoint at the specified address or symbol.
 
     Args:
         address: Address or symbol name of the breakpoint to delete
@@ -98,6 +98,25 @@ async def delete_breakpoint(address: str) -> str:
         raise
     except Exception as e:
         return f"Error deleting breakpoint at {address}: {e}"
+
+
+@mcp.tool()
+async def clear_all_breakpoints() -> str:
+    """Delete all breakpoints at once.
+
+    Use this to clean up all breakpoints and let the program run freely.
+
+    Returns:
+        Confirmation that all breakpoints were cleared
+    """
+    dbg = state.require_connection()
+    try:
+        dbg.cmd("Break.Delete /ALL")
+        return "All breakpoints cleared"
+    except ConnectionError:
+        raise
+    except Exception as e:
+        return f"Error clearing breakpoints: {e}"
 
 
 @mcp.tool()

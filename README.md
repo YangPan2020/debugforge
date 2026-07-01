@@ -25,7 +25,7 @@
 
 ## Highlights
 
-- **58 MCP Tools** — Full TRACE32 access for AI agents: execution control, breakpoints, memory, registers, variables, symbols, build, and more
+- **59 MCP Tools** — Full TRACE32 access for AI agents: execution control, breakpoints, memory, registers, variables, symbols, build, and more
 - **Autonomous Debug Loop** — AI agents can build, flash, debug, locate root causes, fix code, and re-verify — the full edit-compile-debug cycle
 - **Debug Skills** — Accumulate reusable debugging knowledge; AI agents learn from past issues and apply proven strategies
 - **Project-Aware** — Configure once via `debugforge.toml`, your AI agent automatically knows your ELF paths, flash scripts, toolchain, and TRACE32 setup
@@ -41,7 +41,7 @@
 ┌─────────────────┐         MCP (stdio)         ┌──────────────┐       PYRCL/TCP       ┌──────────────┐
 │                 │◄───────────────────────────►│              │◄─────────────────────►│              │
 │   AI Agent      │   JSON-RPC tool calls        │  DebugForge  │   Remote Control API  │   TRACE32    │
-│  (Claude Code,  │   (58 debugging tools)       │  MCP Server  │   (lauterbach-trace32 │  PowerView   │
+│  (Claude Code,  │   (59 debugging tools)       │  MCP Server  │   (lauterbach-trace32 │  PowerView   │
 │   Codex, etc.)  │                              │              │    -rcl)              │              │
 │                 │◄───────────────────────────►│              │◄─────────────────────►│              │
 └─────────────────┘         Results              └──────────────┘       Hardware         └──────┬───────┘
@@ -222,7 +222,7 @@ Environment variables override `debugforge.toml` values (highest priority):
 
 **Priority:** Environment Variables > `debugforge.toml` > Built-in Defaults
 
-## Available Tools (58)
+## Available Tools (59)
 
 ### Connection & Configuration
 
@@ -252,7 +252,8 @@ Environment variables override `debugforge.toml` values (highest priority):
 |------|-------------|
 | `set_breakpoint` | Set a program/read/write/readwrite breakpoint |
 | `list_breakpoints` | List all active breakpoints |
-| `delete_breakpoint` | Delete a breakpoint |
+| `delete_breakpoint` | Delete a breakpoint at a specific address/symbol |
+| `clear_all_breakpoints` | Delete all breakpoints at once |
 | `toggle_breakpoint` | Enable/disable a breakpoint without deleting |
 
 ### Advanced Breakpoints
