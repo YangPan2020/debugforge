@@ -1,0 +1,11 @@
+; DebugForge TRACE32 Configuration
+; Enables Remote Control Layer (RCL) for Python automation
+
+OS=
+SYS=/opt/t32_202509
+TMP=/tmp/t32_debugforge
+
+; Remote Control via NETTCP (required by lauterbach-trace32-rcl Python package)
+RCL=NETTCP
+PORT=20000
+PACKLEN=4096

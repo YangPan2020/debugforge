@@ -1,0 +1,50 @@
+# DebugForge Configuration Template
+# Copy this file to debugforge.toml and fill in your actual values.
+# debugforge.toml is gitignored and will NOT be committed.
+
+[mode]
+mode = "remote"  # "local" or "remote"
+
+[trace32]
+install_path = "C:\\T32"
+
+[connection]
+node = "localhost"       # TRACE32 host (use remote.host for remote mode)
+port = 20000             # TRACE32 RCL port
+protocol = "TCP"
+auto_connect = false
+
+[remote]
+host = "192.168.1.100"             # Remote Windows IP
+winrm_port = 5985                  # WinRM port
+winrm_user = "user@domain.local"   # WinRM username (domain account)
+winrm_password = "your_password"   # WinRM password
+winrm_transport = "ntlm"           # WinRM transport: ntlm, kerberos, basic
+ssh_user = "username"              # SSH username for file transfer
+ssh_password = ""                  # SSH password (leave empty for key auth)
+ssh_port = 22                      # SSH port
+staging_dir = "C:\\T32"            # Remote staging directory
+
+[[remote.source_translates]]
+from = "/home/user/project"
+to = "D:\\project"
+
+[project]
+elf = "/path/to/your/firmware.elf"
+
+[scripts]
+flash = "/path/to/your/flash_script.cmm"
+
+[toolchain]
+compiler_path = ""
+objdump = "tricore-elf-objdump"
+readelf = "tricore-elf-readelf"
+nm = "tricore-elf-nm"
+
+[build]
+command = "make -j8"
+clean_command = "make clean"
+working_dir = ""
+
+[debug]
+skills_dir = ""

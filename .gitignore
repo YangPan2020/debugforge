@@ -14,5 +14,14 @@ venv/
 .ruff_cache/
 htmlcov/
 .coverage
-debugforge.toml
 .claude/
+
+# Sensitive config (contains credentials)
+debugforge.toml
+*.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
