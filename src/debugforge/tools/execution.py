@@ -38,7 +38,7 @@ async def step(mode: str = "into") -> str:
     cmd_map = {
         "into": "Step",
         "over": "Step.Over",
-        "out": "Step.Out",
+        "out": "Go.Return",
         "into_hll": "Step.Hll",
         "over_hll": "Step.HllOver",
         "next_line": "Step.HllOver",
@@ -56,7 +56,7 @@ async def step(mode: str = "into") -> str:
     try:
         dbg.cmd(cmd)
         try:
-            pc = dbg.fnc.register_pc()
+            pc = dbg.register.read("PC").value
             loc = _current_source_location(dbg)
             if loc:
                 return f"Stepped ({mode_norm}). PC = 0x{pc:08X}\nSource: {loc}"
@@ -78,7 +78,7 @@ async def halt() -> str:
     try:
         dbg.cmd("Break")
         try:
-            pc = dbg.fnc.register_pc()
+            pc = dbg.register.read("PC").value
             return f"Execution halted. PC = 0x{pc:08X}"
         except Exception:
             return "Execution halted"
@@ -97,6 +97,8 @@ async def reset() -> str:
     try:
         dbg.cmd("SYStem.RESetTarget")
         return "Target reset complete"
+    except ConnectionError:
+        raise
     except Exception as e:
         return f"Error resetting target: {e}"
 
@@ -117,7 +119,7 @@ async def get_state() -> str:
             if run_state:
                 info += "\nCPU: Running"
             else:
-                pc = dbg.fnc.register_pc()
+                pc = dbg.register.read("PC").value
                 info += f"\nCPU: Stopped at PC = 0x{pc:08X}"
         except Exception:
             pass
@@ -128,20 +130,32 @@ async def get_state() -> str:
 
 def _current_source_location(dbg) -> str:
     """Return current source location as 'file:line (function)' or empty."""
+    func_name = ""
+    src_file = ""
+    src_line = ""
     try:
-        result = dbg.eval('sYmbol.FUNCtion(PP())')
+        dbg.cmd('EVAL sYmbol.FUNCtion(PP())')
+        func_name = dbg.fnc.eval_string()
     except Exception:
-        result = ""
+        pass
     try:
-        src = dbg.eval('sYmbol.SOURCE(PP())')
+        dbg.cmd('EVAL sYmbol.SOURCEFILE(PP())')
+        src_file = dbg.fnc.eval_string()
     except Exception:
-        src = ""
-    if src:
-        loc = f"{src}"
-        if result:
-            loc += f" in {result}"
+        pass
+    try:
+        dbg.cmd('EVAL sYmbol.SOURCELINE(PP())')
+        src_line = str(dbg.fnc.eval())
+    except Exception:
+        pass
+    if src_file:
+        loc = src_file
+        if src_line:
+            loc += f":{src_line}"
+        if func_name:
+            loc += f" in {func_name}"
         return loc
-    return result if result else ""
+    return func_name if func_name else ""
 
 
 @mcp.tool()
@@ -156,7 +170,7 @@ async def get_source_location() -> str:
     """
     dbg = state.require_connection()
     try:
-        pc = dbg.fnc.register_pc()
+        pc = dbg.register.read("PC").value
         loc = _current_source_location(dbg)
         if loc:
             return f"PC = 0x{pc:08X}\n{loc}"
@@ -199,10 +213,11 @@ async def get_current_function() -> str:
     """
     dbg = state.require_connection()
     try:
-        result = dbg.eval('sYmbol.FUNCtion(PP())')
+        dbg.cmd('EVAL sYmbol.FUNCtion(PP())')
+        result = dbg.fnc.eval_string()
         if result:
             return f"Current function: {result}"
-        pc = dbg.fnc.register_pc()
+        pc = dbg.register.read("PC").value
         return f"Current function: unknown (no symbol at PC = 0x{pc:08X})"
     except ConnectionError:
         raise
@@ -257,7 +272,7 @@ async def get_run_stats() -> str:
             parts.append(f"State check failed: {e}")
 
         try:
-            pc = dbg.fnc.register_pc()
+            pc = dbg.register.read("PC").value
             parts.append(f"PC: 0x{pc:08X}")
         except Exception:
             pass
@@ -332,7 +347,8 @@ async def get_message_line() -> str:
     """
     dbg = state.require_connection()
     try:
-        result = dbg.eval('MSG.line()')
+        dbg.cmd("EVAL MSG.line()")
+        result = dbg.fnc.eval_string()
         return f"Message line: '{result}'" if result else "Message line: (empty)"
     except ConnectionError:
         raise

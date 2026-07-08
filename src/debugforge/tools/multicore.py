@@ -35,7 +35,7 @@ async def select_core(core: int) -> str:
             return f"Core {core} selected — Running"
         else:
             try:
-                pc = dbg.fnc.register_pc()
+                pc = dbg.register.read("PC").value
                 return f"Core {core} selected — Stopped at PC = 0x{pc:08X}"
             except Exception:
                 return f"Core {core} selected — Stopped"
@@ -62,7 +62,8 @@ async def get_chip_info() -> str:
 
         # Try to get chip stepping via PRACTICE function
         try:
-            stepping = dbg.eval('CHIP.STEPping()')
+            dbg.cmd("EVAL CHIP.STEPping()")
+            stepping = dbg.fnc.eval_string()
             info_parts.append(f"  Chip Stepping: {stepping}")
         except Exception:
             pass
@@ -173,7 +174,7 @@ async def get_all_cores_state() -> str:
             return "Current core: Running"
         else:
             try:
-                pc = dbg.fnc.register_pc()
+                pc = dbg.register.read("PC").value
                 return f"Current core: Stopped at PC = 0x{pc:08X}"
             except Exception:
                 return "Current core: Stopped"
@@ -198,7 +199,8 @@ async def detect_cpu() -> str:
         dbg.cmd("SYStem.DETECT.CPU")
         # Try to read chip stepping
         try:
-            stepping = dbg.eval('CHIP.STEPping()')
+            dbg.cmd("EVAL CHIP.STEPping()")
+            stepping = dbg.fnc.eval_string()
             return f"Auto-detected CPU: {stepping}"
         except Exception:
             return "CPU auto-detection executed (use get_chip_info for details)"

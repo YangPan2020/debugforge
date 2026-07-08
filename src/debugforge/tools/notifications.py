@@ -29,11 +29,11 @@ async def send_message(text: str, level: str = "info") -> str:
     dbg = state.require_connection()
     try:
         level_map = {
-            "info": "MSG",
-            "warning": "MSG !",
-            "error": "MSG !!",
+            "info": "PRINT",
+            "warning": "PRINT %WARNING",
+            "error": "PRINT %ERROR",
         }
-        cmd = level_map.get(level, "MSG")
+        cmd = level_map.get(level, "PRINT")
         dbg.cmd(f'{cmd} "{text}"')
         return f"Message displayed: [{level}] {text}"
     except ConnectionError:
@@ -53,7 +53,7 @@ async def clear_message() -> str:
     """
     dbg = state.require_connection()
     try:
-        dbg.cmd("MSG")
+        dbg.cmd('PRINT ""')
         return "Message line cleared"
     except ConnectionError:
         raise

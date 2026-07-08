@@ -134,13 +134,15 @@ async def evaluate(expression: str) -> str:
         dbg.cmd(f"EVAL {expression}")
         try:
             result = dbg.fnc.eval_string()
-            return f"Result: {result}"
+            if result:
+                return f"Result: {result}"
         except Exception:
-            try:
-                result = dbg.fnc.eval_int()
-                return f"Result: {result} (0x{result:X})"
-            except Exception:
-                return "Expression evaluated (result type not readable via this interface)"
+            pass
+        try:
+            result = dbg.fnc.eval()
+            return f"Result: {result} (0x{result:X})"
+        except Exception:
+            return "Expression evaluated (result type not readable via this interface)"
     except ConnectionError:
         raise
     except Exception as e:

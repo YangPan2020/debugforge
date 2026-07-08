@@ -134,7 +134,7 @@ async def trace_clear() -> str:
     """
     dbg = state.require_connection()
     try:
-        dbg.cmd("Trace.Clear")
+        dbg.cmd("Trace.RESet")
         return "Trace buffer cleared"
     except ConnectionError:
         raise
