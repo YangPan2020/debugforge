@@ -80,3 +80,73 @@ async def write_memory(
         return f"Invalid hex data '{data}': {e}"
     except Exception as e:
         return f"Error writing memory at {address}: {e}"
+
+
+@mcp.tool()
+async def read_memory_cached(
+    address: str,
+    length: int,
+    width: int = 32,
+) -> str:
+    """Read memory using cache-aware access (D: prefix).
+
+    Shows data as the CPU sees it through its data cache, not the stale
+    value on the bus. Essential for debugging code that modifies cached
+    memory (e.g., shared variables in LMU on TC39x).
+
+    Args:
+        address: Memory address as hex string (e.g., "0x80000000")
+        length: Number of bytes to read
+        width: Access width in bits — 8, 16, 32, or 64 (default: 32)
+
+    Returns:
+        Hex dump of cached memory contents
+    """
+    return await read_memory(address, length, width, access="D:")
+
+
+@mcp.tool()
+async def read_memory_physical(
+    address: str,
+    length: int,
+    width: int = 32,
+) -> str:
+    """Read physical memory bypassing the CPU cache.
+
+    Reads the actual value on the memory bus, which may differ from what
+    the CPU sees if the data cache has not been flushed.
+
+    Args:
+        address: Memory address as hex string (e.g., "0x80000000")
+        length: Number of bytes to read
+        width: Access width in bits — 8, 16, 32, or 64 (default: 32)
+
+    Returns:
+        Hex dump of physical memory contents
+    """
+    return await read_memory(address, length, width, access="")
+
+
+@mcp.tool()
+async def list_access_classes() -> str:
+    """List all available memory access classes for TRACE32.
+
+    Shows the different access class prefixes that can be used to read
+    memory through different paths (cache, bus, peripheral, etc.).
+
+    Returns:
+        Table of access classes with descriptions
+    """
+    rows = [
+        ("(none)", "Default access — bus-level (may show stale cache data)"),
+        ("D:", "Data access — shows CPU's view through data cache"),
+        ("P:", "Program access — instruction memory space"),
+        ("DC:", "Data cache direct — read data cache contents"),
+        ("IC:", "Instruction cache direct — read I-cache contents"),
+        ("PER:", "Peripheral access — SFR/peripheral registers"),
+        ("DUALPORT:", "Dual-port RAM access (if supported)"),
+    ]
+    lines = ["Memory Access Classes:", ""]
+    for prefix, desc in rows:
+        lines.append(f"  {prefix:12s}  {desc}")
+    return "\n".join(lines)

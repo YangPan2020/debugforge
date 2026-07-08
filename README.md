@@ -1,513 +1,190 @@
-<p align="center">
-  <img src="assets/logo.svg" alt="DebugForge Logo" width="200" height="200">
-</p>
+# DebugForge
 
-<h1 align="center">DebugForge</h1>
+将 TRACE32 接入 AI Agent，实现自动化调试、Debug 定位的 MCP Server 工具。支持本地和远程环境。
 
-<p align="center">
-  <strong>Bridge Lauterbach TRACE32 to AI Agents via MCP</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/YangPan2020/debugforge/actions"><img src="https://github.com/YangPan2020/debugforge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
-  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-Compatible-purple.svg" alt="MCP"></a>
-</p>
-
-<p align="center">
-  DebugForge is an MCP server that connects Lauterbach TRACE32 debuggers to AI agents.<br>
-  It gives <strong>Claude Code</strong>, <strong>Codex</strong>, <strong>Qwen</strong> and other AI agents direct access to your hardware debugger<br>
-  — enabling them to autonomously read target state, locate software bugs, and drive the fix-debug cycle end-to-end.
-</p>
-
----
-
-## Highlights
-
-- **59 MCP Tools** — Full TRACE32 access for AI agents: execution control, breakpoints, memory, registers, variables, symbols, build, and more
-- **Autonomous Debug Loop** — AI agents can build, flash, debug, locate root causes, fix code, and re-verify — the full edit-compile-debug cycle
-- **Debug Skills** — Accumulate reusable debugging knowledge; AI agents learn from past issues and apply proven strategies
-- **Project-Aware** — Configure once via `debugforge.toml`, your AI agent automatically knows your ELF paths, flash scripts, toolchain, and TRACE32 setup
-- **Real Hardware** — Battle-tested on TC397 TriCore via USB. Your AI agent controls actual silicon, not a simulator
-- **Advanced Breakpoints** — Conditional, data watchpoints, hit-count, task-specific, action triggers, and temporary breakpoints
-- **Deep Inspection** — AI agents can read call stacks with locals, expand structs, view disassembly, inspect peripherals
-- **Any MCP Agent** — Works with Claude Code, Codex CLI, Qwen, or any MCP-compatible AI assistant
-- **Zero Lock-in** — MIT licensed, open source, no vendor dependencies beyond TRACE32 itself
-
-## Architecture
+## 架构
 
 ```
-┌─────────────────┐         MCP (stdio)         ┌──────────────┐       PYRCL/TCP       ┌──────────────┐
-│                 │◄───────────────────────────►│              │◄─────────────────────►│              │
-│   AI Agent      │   JSON-RPC tool calls        │  DebugForge  │   Remote Control API  │   TRACE32    │
-│  (Claude Code,  │   (59 debugging tools)       │  MCP Server  │   (lauterbach-trace32 │  PowerView   │
-│   Codex, etc.)  │                              │              │    -rcl)              │              │
-│                 │◄───────────────────────────►│              │◄─────────────────────►│              │
-└─────────────────┘         Results              └──────────────┘       Hardware         └──────┬───────┘
-                                                                                               │
-                                                                                        ┌──────▼───────┐
-                                                                                        │   Target MCU  │
-                                                                                        │  (e.g. TC397) │
-                                                                                        └──────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  本地 Linux (Agent)                                         │
+│  - 源码/ELF/CMM                                             │
+│  - AI Agent (PYRCL 客户端)                                  │
+│  - DebugForge MCP Server                                    │
+└────────────────┬────────────────────────┬───────────────────┘
+                 │ SCP (端口 22)          │ PYRCL (端口 20000)
+                 │ 传输 ELF/CMM           │ 远程控制 TRACE32
+                 ▼                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  远程 Windows (your-windows-host)                           │
+│  - OpenSSH Server                                           │
+│  - TRACE32                                                  │
+│  - 硬件板子 (TC38x/TC39x)                                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+## 快速开始
+
+### 1. 安装
 
 ```bash
-# 1. Install DebugForge
-pip install debugforge
-
-# 2. Install TRACE32 Python package (from your TRACE32 installation)
-pip install <YOUR_T32_PATH>/demo/api/python/rcl/dist/lauterbach_trace32_rcl-*.whl
-
-# 3. Add to your AI agent's MCP config (e.g. .claude/settings.json)
-```
-
-```json
-{
-  "mcpServers": {
-    "debugforge": {
-      "command": "debugforge"
-    }
-  }
-}
-```
-
-```bash
-# 4. Start TRACE32 with API port enabled, then ask your AI agent:
-#    "Connect to TRACE32, load the firmware, find why the system crashes at boot"
-```
-
-## Installation
-
-### Prerequisites
-
-| Requirement | Details |
-|-------------|---------|
-| Python | 3.10 or higher |
-| TRACE32 | PowerView running with Remote API enabled |
-| PYRCL | `lauterbach-trace32-rcl` package from your TRACE32 installation |
-
-### Step 1: Install DebugForge
-
-```bash
-pip install debugforge
-```
-
-Or install from source:
-
-```bash
-git clone https://github.com/YangPan2020/debugforge.git
-cd debugforge
 pip install -e .
 ```
 
-### Step 2: Install TRACE32 Python Library
+### 2. 配置
 
-The PYRCL wheel is bundled with your TRACE32 installation:
+复制配置模板并填入实际信息：
 
 ```bash
-pip install <T32_INSTALL_PATH>/demo/api/python/rcl/dist/lauterbach_trace32_rcl-*.whl
+cp debugforge.toml.example debugforge.toml
 ```
 
-> Replace `<T32_INSTALL_PATH>` with your TRACE32 installation directory (e.g., `/opt/t32`, `C:\T32`).
-
-### Step 3: Enable TRACE32 Remote API
-
-Add these lines to your TRACE32 configuration file (`.t32` or `config.t32`):
-
-```
-RCL=NETTCP
-PORT=20000
-```
-
-Then restart TRACE32 PowerView.
-
-## Configuration
-
-### MCP Client Setup
-
-All MCP-compatible AI agents use the same configuration — register `debugforge` as an MCP server:
-
-```json
-{
-  "mcpServers": {
-    "debugforge": {
-      "command": "debugforge"
-    }
-  }
-}
-```
-
-| Agent | Config File | Notes |
-|-------|-------------|-------|
-| Claude Code | `.claude/settings.json` | Also supports `env` field for auto-connect |
-| Gemini CLI | `.gemini/settings.json` | |
-| GitHub Copilot | `.vscode/mcp.json` | VS Code extension |
-| Antigravity CLI | MCP config | |
-| Codex CLI | MCP config | |
-| DeepSeek | MCP config | |
-| Hermes Agent | MCP config | |
-
-**Auto-connect example** (skip manual `connect()` call):
-
-```json
-{
-  "mcpServers": {
-    "debugforge": {
-      "command": "debugforge",
-      "env": {
-        "T32_AUTO_CONNECT": "true",
-        "T32_PORT": "20000"
-      }
-    }
-  }
-}
-```
-
-### Project Configuration (`debugforge.toml`)
-
-Create a `debugforge.toml` in your project root to tell your AI agent about your debugging environment:
+编辑 `debugforge.toml`：
 
 ```toml
-[trace32]
-install_path = "/opt/t32"                      # TRACE32 installation directory
+[mode]
+mode = "remote"  # 或 "local"
 
 [connection]
-node = "localhost"                              # TRACE32 host address
-port = 20000                                   # API port (match your .t32 config)
-protocol = "TCP"                               # TCP or UDP
-auto_connect = true                            # Connect when server starts
+node = "192.168.1.100"  # TRACE32 所在主机 IP
+port = 20000
+
+[remote]
+host = "192.168.1.100"
+winrm_user = "user@domain.local"
+winrm_password = "your_password"
+ssh_user = "username"
+staging_dir = "D:\\T32\\debugforge"
 
 [project]
-elf = "output/build/firmware.elf"              # ELF file with debug symbols
-map = "output/build/firmware.map"              # MAP file (optional)
-
-[toolchain]
-compiler_path = "/opt/gcc-arm/bin"             # Compiler toolchain path
-objdump = "arm-none-eabi-objdump"              # Disassembly tool
-readelf = "arm-none-eabi-readelf"              # ELF analysis tool
-nm = "arm-none-eabi-nm"                        # Symbol table tool
-
-[build]
-command = "make -j8"                           # Build command
-clean_command = "make clean"                   # Clean command
-working_dir = "."                              # Build working directory
+elf = "/path/to/your/firmware.elf"
 
 [scripts]
-flash = "tools/Trace32/flash.cmm"             # Flash programming script
-init = "tools/Trace32/startup.cmm"            # Target init script
-
-[debug]
-skills_dir = ".debugforge/skills"              # Debug knowledge base directory
+flash = "/path/to/your/flash_script.cmm"
 ```
 
-All relative paths are resolved from the directory containing `debugforge.toml`.
+> **注意**: `debugforge.toml` 包含敏感凭据信息，已被 `.gitignore` 排除，不会被提交到仓库。
 
-See [`debugforge.example.toml`](debugforge.example.toml) for a complete template.
+### 3. 配置远程 Windows
 
-### Environment Variables
+参考 [WINDOWS_SSH_SETUP.md](WINDOWS_SSH_SETUP.md) 安装 OpenSSH Server。
 
-Environment variables override `debugforge.toml` values (highest priority):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `T32_INSTALL_PATH` | — | TRACE32 installation directory |
-| `T32_NODE` | `localhost` | TRACE32 host address |
-| `T32_PORT` | `20000` | TRACE32 API port |
-| `T32_PROTOCOL` | `TCP` | Communication protocol (TCP/UDP) |
-| `T32_AUTO_CONNECT` | `false` | Auto-connect on server start |
-| `DEBUGFORGE_CONFIG` | `./debugforge.toml` | Path to config file |
-
-**Priority:** Environment Variables > `debugforge.toml` > Built-in Defaults
-
-## Available Tools (59)
-
-### Connection & Configuration
-
-| Tool | Description |
-|------|-------------|
-| `connect` | Connect to a TRACE32 PowerView instance |
-| `disconnect` | Disconnect from TRACE32 |
-| `status` | Get connection status, TRACE32 version, and system state |
-| `get_project_config` | Get the loaded project configuration (paths, scripts, settings) |
-
-### Execution Control
-
-| Tool | Description |
-|------|-------------|
-| `go` | Start/continue program execution |
-| `step` | Single-step execution (into, over, or out) |
-| `halt` | Stop program execution |
-| `reset` | Reset the target CPU |
-| `get_state` | Get current CPU execution state |
-| `go_till` | Run until a specific address (temporary breakpoint) |
-| `go_up` | Run until current function returns to caller |
-| `go_return` | Run to the return instruction of current function |
-
-### Breakpoints
-
-| Tool | Description |
-|------|-------------|
-| `set_breakpoint` | Set a program/read/write/readwrite breakpoint |
-| `list_breakpoints` | List all active breakpoints |
-| `delete_breakpoint` | Delete a breakpoint at a specific address/symbol |
-| `clear_all_breakpoints` | Delete all breakpoints at once |
-| `toggle_breakpoint` | Enable/disable a breakpoint without deleting |
-
-### Advanced Breakpoints
-
-| Tool | Description |
-|------|-------------|
-| `set_conditional_breakpoint` | Breakpoint with HLL condition (e.g., `i > 100`) |
-| `set_data_breakpoint` | Trigger on memory access with optional value match |
-| `set_count_breakpoint` | Stop after N-th hit (loop debugging) |
-| `set_task_breakpoint` | Trigger only for a specific OS task/thread |
-| `set_action_breakpoint` | Execute a TRACE32 command on hit |
-| `set_temporary_breakpoint` | Auto-deletes after first hit |
-
-### Memory
-
-| Tool | Description |
-|------|-------------|
-| `read_memory` | Read target memory (hex dump format) |
-| `write_memory` | Write data to target memory |
-| `data_set` | Write a value to a memory address using Data.Set |
-
-### Registers
-
-| Tool | Description |
-|------|-------------|
-| `read_register` | Read a single CPU register |
-| `read_registers` | Read multiple registers at once |
-| `write_register` | Write a value to a CPU register |
-
-### Variables
-
-| Tool | Description |
-|------|-------------|
-| `read_variable` | Read a C/C++ variable by symbol name |
-| `write_variable` | Write a value to a C/C++ variable |
-| `var_view` | View a variable/struct/array with full expansion |
-| `var_set` | Set a C/C++ variable to a new value |
-
-### Symbols
-
-| Tool | Description |
-|------|-------------|
-| `symbol_by_name` | Look up symbol address by name |
-| `symbol_by_address` | Look up symbol name by address |
-
-### Commands & Scripting
-
-| Tool | Description |
-|------|-------------|
-| `execute_command` | Execute any TRACE32 PRACTICE command |
-| `run_practice` | Run a PRACTICE (.cmm) script with timeout |
-| `evaluate` | Evaluate a TRACE32 expression or function |
-
-### Debug Views
-
-| Tool | Description |
-|------|-------------|
-| `get_callstack` | Get call stack with function names |
-| `get_locals` | Get call stack with all local variables per frame |
-| `get_data_dump` | Formatted memory dump (hex + ASCII) |
-| `get_register_view` | Full register view with all flags |
-| `get_disassembly` | Disassembly listing at address or current PC |
-| `get_source_listing` | Source code around current execution point |
-| `get_window` | Get text content of any TRACE32 window command |
-
-### System & OS Awareness
-
-| Tool | Description |
-|------|-------------|
-| `get_task_list` | List OS tasks/threads |
-| `get_task_stack` | Get stack info for OS tasks |
-| `get_peripheral_view` | View peripheral register contents |
-
-### Build & Binary Analysis
-
-| Tool | Description |
-|------|-------------|
-| `build_project` | Execute the configured build command |
-| `clean_project` | Execute the configured clean command |
-| `disassemble` | Disassemble a function or address range (objdump) |
-| `analyze_map` | Analyze MAP file for memory layout and symbols |
-| `analyze_elf` | Analyze ELF file structure (readelf) |
-
-### Workflow Orchestration
-
-| Tool | Description |
-|------|-------------|
-| `flash_and_run` | Flash firmware → reset → run to breakpoint |
-| `build_flash_run` | Build → flash → reset → run (full edit-compile-debug loop) |
-
-### Debug Skills (Knowledge Base)
-
-| Tool | Description |
-|------|-------------|
-| `list_debug_skills` | List all debug skills in the knowledge base |
-| `get_debug_skill` | Get full content of a specific debug skill |
-| `search_debug_skills` | Search skills by keywords matching symptoms |
-| `save_debug_skill` | Save a new debug skill from a successful debug session |
-
-## Usage Examples
-
-### Basic Debug Session
-
-```
-You: "Connect to TRACE32 and help me find why the system crashes after boot"
-
-AI Agent workflow:
-  1. get_project_config()           → learns your ELF path and scripts
-  2. connect()                      → connects to TRACE32
-  3. execute_command("SYStem.Up")   → powers up the target
-  4. execute_command("Data.LOAD.Elf /path/to/firmware.elf")
-  5. set_breakpoint("main")
-  6. go()                           → runs to main
-  7. step("over")                   → steps through code
-  8. get_callstack()                → analyzes the call stack
-  9. read_variable("error_code")    → checks variables
-  → "Found it: error_code = -1 because init_hardware() fails at line 84"
-```
-
-### Flash and Debug
-
-```
-You: "Flash the new firmware and verify it boots correctly"
-
-AI Agent workflow:
-  1. get_project_config()           → gets flash script path
-  2. connect()
-  3. run_practice("tools/flash.cmm")  → flashes firmware
-  4. reset()
-  5. set_breakpoint("main")
-  6. go()
-  7. get_state()                    → confirms target stopped at main
-  → "Firmware flashed and verified — target stopped at main() successfully"
-```
-
-### Advanced Debugging
-
-```
-You: "The buffer overflow happens somewhere in process_packet(). Set a watchpoint."
-
-AI Agent workflow:
-  1. symbol_by_name("rx_buffer")    → gets buffer address
-  2. set_data_breakpoint(address="0xD0001000", access="write", size=256)
-  3. go()
-  4. get_callstack()                → sees who wrote beyond the buffer
-  5. get_disassembly()              → examines the offending instruction
-  6. read_memory("0xD0001000", 512) → shows the corrupted data
-  → "Overflow at process_packet+0x4C: memcpy writes 320 bytes into 256-byte buffer"
-```
-
-### Autonomous Fix Cycle
-
-```
-You: "The watchdog is resetting the MCU. Find and fix the root cause."
-
-AI Agent workflow:
-  1. search_debug_skills("watchdog timeout reset")  → finds matching skill
-  2. get_debug_skill("watchdog-timeout")            → reads proven strategy
-  3. build_flash_run()                              → build + flash + run to main
-  4. set_conditional_breakpoint("wdt_reset_handler", condition="reset_count > 0")
-  5. go()                                           → runs until watchdog fires
-  6. get_callstack()                                → finds stuck function
-  7. get_locals()                                   → sees infinite loop condition
-  ... fixes code ...
-  8. build_flash_run()                              → rebuild, reflash, verify
-  9. save_debug_skill(...)                          → captures new knowledge
-  → "Fixed: infinite loop in spi_wait_ready() when peripheral clock is disabled"
-```
-
-## Supported AI Agents
-
-| Agent | Status | Configuration |
-|-------|--------|---------------|
-| [Claude Code](https://claude.com/claude-code) | ✅ Tested | `.claude/settings.json` |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ Compatible | `.gemini/settings.json` |
-| [GitHub Copilot](https://github.com/features/copilot) | ✅ Compatible | `.vscode/mcp.json` |
-| [Codex CLI](https://github.com/openai/codex) | ✅ Compatible | MCP stdio transport |
-| [Antigravity CLI](https://github.com/antigravity-official/antigravity-cli) | ✅ Compatible | MCP stdio transport |
-| [DeepSeek](https://www.deepseek.com/) | ✅ Compatible | MCP stdio transport |
-| [Hermes Agent](https://github.com/hermes-agent/hermes) | ✅ Compatible | MCP stdio transport |
-| [Qwen Agent](https://github.com/QwenLM/Qwen-Agent) | ✅ Compatible | MCP stdio transport |
-| Any MCP Client | ✅ Compatible | Standard MCP protocol |
-
-## Development
-
-### Setup
+### 4. 运行 MCP Server
 
 ```bash
-git clone https://github.com/YangPan2020/debugforge.git
-cd debugforge
-pip install -e ".[dev]"
+debugforge
 ```
 
-### Run Tests
+或通过 examples 中的脚本直接测试：
 
 ```bash
-pytest tests/ -v
+python examples/remote_debug.py
+python examples/remote_debug.py --pyrcl
 ```
 
-### Code Style
+## 工作流
 
-This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
+### Remote 模式
+
+1. **文件传输**: SCP/WinRM 传输 ELF + CMM 到 Windows staging 目录
+2. **CMM Wrapper**: 生成 wrapper CMM，将 ELF 路径替换为 Windows 路径
+3. **PYRCL 连接**: 通过 TCP 连接远程 TRACE32
+4. **执行 CMM**: 远程 TRACE32 执行 CMM 烧录 ELF
+5. **源码映射**: 设置 `Symbol.SourcePATH.Translate` 让 TRACE32 找到源码
+
+### Local 模式
+
+1. **PYRCL 连接**: 连接本地 TRACE32
+2. **执行 CMM**: 直接执行本地 CMM 脚本
+
+## 配置详解
+
+参考 `debugforge.toml.example` 获取完整配置项说明。
+
+### 模式选择
+
+```toml
+[mode]
+mode = "remote"  # "local" 或 "remote"
+```
+
+### 远程连接
+
+```toml
+[remote]
+host = "192.168.1.100"        # 远程 Windows IP
+winrm_port = 5985             # WinRM 端口
+winrm_user = "user@domain"    # WinRM 用户名
+winrm_password = "password"   # WinRM 密码
+ssh_user = "username"         # SSH 用户名
+ssh_password = ""             # SSH 密码 (留空使用 key)
+ssh_port = 22                 # SSH 端口
+staging_dir = "D:\\T32\\debugforge"  # 文件传输目标目录
+```
+
+### 源码路径映射
+
+```toml
+[[remote.source_translates]]
+from = "/home/user/project"
+to   = "D:\\project"
+```
+
+让 TRACE32 在 debug 时能找到源码文件。需要先将源码复制到 Windows 对应目录。
+
+## 依赖
 
 ```bash
-ruff check src/ tests/
-ruff format src/ tests/
+pip install paramiko scp pywinrm
 ```
 
-### Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## Autonomous Debug Workflow
-
-DebugForge supports a full autonomous debug loop. Include [`debugforge-workflow.md`](debugforge-workflow.md) in your AI agent's instructions to enable:
+## 文件说明
 
 ```
-Problem Description → Understand Code → Build → Flash → Debug → Locate Bug → Fix → Rebuild → Verify → Done
+debugforge/
+├── src/debugforge/          # MCP Server 核心代码
+├── examples/                # 示例脚本
+│   ├── remote_debug.py      # 远程调试示例 (WinRM + PYRCL)
+│   ├── remote_debug_tc38x.py  # TC38x 远程调试示例
+│   ├── test_all_tools.py    # 全工具测试
+│   └── debug_tc397_live.py  # TC397 完整调试工作流
+├── debugforge.toml.example  # 配置模板
+├── WINDOWS_SSH_SETUP.md     # Windows OpenSSH 配置指南
+└── README.md                # 本文档
 ```
 
-**Phases:**
-1. **Understand** — Parse symptoms, search debug skills for matching patterns
-2. **Analyze** — Read source, inspect MAP/ELF, disassemble critical functions
-3. **Debug on Hardware** — Build/flash/run, set breakpoints, inspect state
-4. **Fix & Verify** — Modify code, rebuild, reflash, confirm fix
-5. **Capture Knowledge** — Save new debug patterns as reusable skills
+## 故障排查
 
-### Debug Skills
+### SSH 连接失败
 
-Debug skills are reusable Markdown files in `.debugforge/skills/` that capture proven debugging strategies:
-
-```bash
-.debugforge/skills/
-├── stack-overflow.md
-├── hardfault-analysis.md
-└── peripheral-init-failure.md
+```
+[FATAL] 连接失败: SSH connection failed
 ```
 
-AI agents search these automatically when debugging, and save new skills after resolving novel issues.
+- 检查 Windows OpenSSH Server 是否安装并运行
+- 检查防火墙是否允许端口 22
+- 测试: `ssh <your-user>@<your-host>`
 
-## Roadmap
+### PYRCL 连接失败
 
-- [ ] HTTP/SSE transport for remote debugging
-- [ ] Auto-start/manage TRACE32 lifecycle
-- [ ] Multi-core debugging (multiple simultaneous connections)
-- [ ] Trace data analysis and visualization
-- [ ] Flash programming tools (dedicated, beyond script execution)
+```
+[FATAL] 连接失败: Connection refused
+```
+
+- 检查远程 TRACE32 是否启动
+- 检查 TRACE32 配置: `RCL=NETTCP PORT=20000`
+- 检查防火墙是否允许端口 20000
+- 测试: `telnet <your-host> 20000`
+
+### CMM 执行失败
+
+```
+CMM 异常: ...
+```
+
+- 检查 ELF 文件是否成功传输到 staging_dir
+- 检查 CMM 中的路径是否正确
+- 查看远程 TRACE32 窗口错误信息
 
 ## License
 
-[MIT](LICENSE) — free for personal and commercial use.
-
----
-
-<p align="center">
-  <sub>Built with ❤️ for the embedded debugging community</sub>
-</p>
+MIT

@@ -46,6 +46,12 @@ from debugforge.tools import debug_advanced  # noqa: E402, F401
 from debugforge.tools import build  # noqa: E402, F401
 from debugforge.tools import workflow  # noqa: E402, F401
 from debugforge.tools import skills  # noqa: E402, F401
+from debugforge.tools import trace  # noqa: E402, F401
+from debugforge.tools import multicore  # noqa: E402, F401
+from debugforge.tools import benchmark  # noqa: E402, F401
+from debugforge.tools import system_config  # noqa: E402, F401
+from debugforge.tools import watchpin  # noqa: E402, F401
+from debugforge.tools import notifications  # noqa: E402, F401
 
 
 def main():

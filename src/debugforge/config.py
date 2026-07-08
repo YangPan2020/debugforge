@@ -17,6 +17,29 @@ else:
 
 
 @dataclass
+class RemoteConfig:
+    """Remote connection configuration (WinRM/SSH)."""
+
+    host: str = ""
+    mode: str = "local"
+    winrm_port: int = 5985
+    winrm_user: str = ""
+    winrm_password: str = ""
+    winrm_transport: str = "ntlm"
+    ssh_user: str = ""
+    ssh_password: str = ""
+    ssh_port: int = 22
+    staging_dir: str = ""
+    source_translates: list[dict[str, str]] = field(default_factory=list)
+
+    @property
+    def winrm_url(self) -> str:
+        if not self.host:
+            return ""
+        return f"http://{self.host}:{self.winrm_port}/wsman"
+
+
+@dataclass
 class DebugForgeConfig:
     """DebugForge project configuration."""
 
@@ -34,7 +57,7 @@ class DebugForgeConfig:
     map: str = ""
 
     # Scripts (resolved to absolute)
-    scripts: dict[str, str] = field(default_factory=dict)
+    scripts: dict[str, str | list[str]] = field(default_factory=dict)
 
     # Toolchain settings
     compiler_path: str = ""
@@ -49,6 +72,9 @@ class DebugForgeConfig:
 
     # Debug settings
     skills_dir: str = ""
+
+    # Remote settings
+    remote: RemoteConfig = field(default_factory=RemoteConfig)
 
     # Base directory for resolving relative paths
     _base_dir: str = field(default="", repr=False)
@@ -128,7 +154,10 @@ def load_config(config_path: str | None = None) -> DebugForgeConfig:
         # [scripts]
         scripts_section = data.get("scripts", {})
         for key, val in scripts_section.items():
-            cfg.scripts[key] = _resolve_path(val, base_dir)
+            if isinstance(val, str):
+                cfg.scripts[key] = _resolve_path(val, base_dir)
+            elif isinstance(val, list):
+                cfg.scripts[key] = [_resolve_path(v, base_dir) for v in val if isinstance(v, str)]
 
         # [toolchain]
         tc_section = data.get("toolchain", {})
@@ -154,6 +183,37 @@ def load_config(config_path: str | None = None) -> DebugForgeConfig:
         debug_section = data.get("debug", {})
         if "skills_dir" in debug_section:
             cfg.skills_dir = _resolve_path(debug_section["skills_dir"], base_dir)
+
+        # [mode]
+        mode_section = data.get("mode", {})
+        if "mode" in mode_section:
+            cfg.remote.mode = mode_section["mode"]
+
+        # [remote]
+        remote_section = data.get("remote", {})
+        if "host" in remote_section:
+            cfg.remote.host = remote_section["host"]
+        if "winrm_port" in remote_section:
+            cfg.remote.winrm_port = int(remote_section["winrm_port"])
+        if "winrm_user" in remote_section:
+            cfg.remote.winrm_user = remote_section["winrm_user"]
+        if "winrm_password" in remote_section:
+            cfg.remote.winrm_password = remote_section["winrm_password"]
+        if "winrm_transport" in remote_section:
+            cfg.remote.winrm_transport = remote_section["winrm_transport"]
+        if "ssh_user" in remote_section:
+            cfg.remote.ssh_user = remote_section["ssh_user"]
+        if "ssh_password" in remote_section:
+            cfg.remote.ssh_password = remote_section["ssh_password"]
+        if "ssh_port" in remote_section:
+            cfg.remote.ssh_port = int(remote_section["ssh_port"])
+        if "staging_dir" in remote_section:
+            cfg.remote.staging_dir = remote_section["staging_dir"]
+        if "port" in remote_section:
+            cfg.port = int(remote_section["port"])
+            cfg.remote.host = cfg.remote.host or cfg.node
+        if "source_translates" in remote_section:
+            cfg.remote.source_translates = remote_section["source_translates"]
 
     # Environment variable overrides (highest priority)
     env_install = os.environ.get("T32_INSTALL_PATH", "")

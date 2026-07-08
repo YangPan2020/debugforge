@@ -143,3 +143,22 @@ async def toggle_breakpoint(address: str, enabled: bool) -> str:
     except Exception as e:
         action = "enabling" if enabled else "disabling"
         return f"Error {action} breakpoint at {address}: {e}"
+
+
+@mcp.tool()
+async def get_breakpoint_count() -> str:
+    """Get the total number of breakpoints currently set.
+
+    Returns:
+        Count of all breakpoints (enabled and disabled)
+    """
+    dbg = state.require_connection()
+    try:
+        bps = dbg.breakpoint.list()
+        count = len(bps) if bps else 0
+        enabled_count = sum(1 for bp in bps if bp.enabled) if bps else 0
+        return f"Total breakpoints: {count} (enabled: {enabled_count}, disabled: {count - enabled_count})"
+    except ConnectionError:
+        raise
+    except Exception as e:
+        return f"Error getting breakpoint count: {e}"
