@@ -83,8 +83,15 @@ async def get_data_dump(address: str, length: int = 256, width: int = 32) -> str
     """
     dbg = state.require_connection()
     try:
-        end_addr = int(address, 16) + length - 1 if address.startswith("0x") or address.startswith("0X") else 0
-        if end_addr > 0:
+        # Strip access class prefix (e.g. "D:0x80000000") for address calculation
+        addr_stripped = address.lstrip("DPSBCadpsbc:")
+        try:
+            base_addr = int(addr_stripped, 16)
+        except ValueError:
+            base_addr = 0
+
+        if base_addr > 0:
+            end_addr = base_addr + length - 1
             cmd = f"Data.dump {address}--0x{end_addr:X} /Long"
         else:
             cmd = f"Data.dump {address}++0x{length - 1:X} /Long"

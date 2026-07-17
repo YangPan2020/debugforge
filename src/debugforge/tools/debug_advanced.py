@@ -230,3 +230,172 @@ async def data_set(address: str, value: str, width: str = "long") -> str:
         raise
     except Exception as e:
         return f"Error setting data at {address}: {e}"
+
+
+@mcp.tool()
+async def capture_trap() -> str:
+    """Capture complete trap/exception debug information in one call.
+
+    When the CPU has stopped due to a trap/exception, this tool retrieves ALL
+    relevant debug information at once without modifying any state:
+      1. CPU state (running/halted, system mode)
+      2. Key registers (PC, PSW, and architecture-specific registers)
+      3. Current source location (function, file, line)
+      4. Full call stack with locals and caller info
+      5. Disassembly around the current PC
+
+    This is a read-only operation — it does NOT reset, halt, or modify the
+    target. Safe to call when the CPU is already stopped at a trap.
+
+    Returns:
+        Formatted trap analysis report with all debug information
+    """
+    dbg = state.require_connection()
+    parts = ["# TRAP Capture Report", ""]
+
+    # 1. CPU State
+    parts.append("## CPU State")
+    try:
+        running = dbg.fnc.state_run()
+        parts.append(f"  Running: {running}")
+    except Exception:
+        parts.append("  Running: (unknown)")
+    try:
+        sys_mode = dbg.fnc.system_mode()
+        parts.append(f"  System Mode: {sys_mode}")
+    except Exception:
+        pass
+    parts.append("")
+
+    # 2. Registers — try common names across architectures
+    #    TriCore: PC, PSW, A0-A15, D0-D15, FCX, LCX, ISP, ICR
+    #    Cortex-M: PC, LR, SP, xPSR (silently skipped if not available)
+    parts.append("## Registers")
+    reg_names = [
+        "PC", "PSW", "SP", "A0", "A1", "A2", "A3", "A4", "A5",
+        "D0", "D1", "D2", "D3", "D4", "D5",
+        "A10", "A11", "A12", "A13", "A14", "A15",
+        "D10", "D11", "D12", "D13", "D14", "D15",
+        "FCX", "LCX", "ISP", "ICR",
+        "LR", "xPSR", "PCXI",
+    ]
+    reg_vals = {}
+    for rn in reg_names:
+        try:
+            val = dbg.register.read(rn)
+            v = val.value if hasattr(val, "value") else val
+            reg_vals[rn] = v
+            parts.append(f"  {rn:4s} = 0x{v:08X}")
+        except Exception:
+            pass
+    parts.append("")
+
+    pc_val = reg_vals.get("PC", 0)
+    psw_val = reg_vals.get("PSW", 0)
+
+    # 3. Source Location
+    parts.append("## Source Location")
+    try:
+        dbg.cmd("EVAL sYmbol.FUNCtion(PP())")
+        func_name = dbg.fnc.eval_string()
+        parts.append(f"  Function: {func_name}")
+    except Exception:
+        parts.append("  Function: (unknown)")
+    try:
+        dbg.cmd("EVAL sYmbol.SOURCEFILE(PP())")
+        src_file = dbg.fnc.eval_string()
+        parts.append(f"  Source: {src_file}")
+    except Exception:
+        parts.append("  Source: (unknown)")
+    try:
+        dbg.cmd("EVAL sYmbol.SOURCELINE(PP())")
+        src_line = str(dbg.fnc.eval())
+        parts.append(f"  Line: {src_line}")
+    except Exception:
+        parts.append("  Line: (unknown)")
+    parts.append("")
+
+    # 4. Call Stack
+    parts.append("## Call Stack")
+    try:
+        result = _read_window(dbg, "Frame.view /Locals /Caller")
+        if result.strip():
+            parts.append(result.strip())
+        else:
+            parts.append("  (empty)")
+    except Exception as e:
+        parts.append(f"  Error: {e}")
+    parts.append("")
+
+    # 5. Disassembly around PC
+    parts.append("## Disassembly (PC +/- 0x40)")
+    if pc_val:
+        start = max(0, pc_val - 0x40)
+        end = pc_val + 0x40
+        try:
+            result = _read_window(dbg, f"Data.List P:0x{start:08X}--0x{end:08X}")
+            if result.strip():
+                parts.append(result.strip())
+            else:
+                parts.append("  (no disassembly)")
+        except Exception as e:
+            parts.append(f"  Error: {e}")
+    parts.append("")
+
+    # 6. PSW analysis (best-effort, architecture-agnostic)
+    if psw_val:
+        parts.append("## PSW Analysis")
+        io_bits = (psw_val >> 24) & 0xFF
+        is_bits = (psw_val >> 16) & 0xFF
+        cdc = (psw_val >> 8) & 0xFF
+        parts.append(f"  PSW.IO = 0x{io_bits:02X}")
+        parts.append(f"  PSW.IS = 0x{is_bits:02X}")
+        parts.append(f"  PSW.CDC = 0x{cdc:02X}")
+        parts.append("")
+
+    parts.append("# End of TRAP Capture")
+    return "\n".join(parts)
+
+
+@mcp.tool()
+async def read_string(address: str, max_length: int = 256) -> str:
+    """Read a null-terminated string from target memory.
+
+    Useful for reading assert filenames, error messages, or any C string
+    stored in target memory.
+
+    Args:
+        address: Memory address as hex string (e.g., "0x808777A8") or with
+                 access class prefix (e.g., "D:0x808777A8")
+        max_length: Maximum bytes to read (default: 256)
+
+    Returns:
+        The string read from memory, or error message
+    """
+    dbg = state.require_connection()
+    try:
+        # Use TRACE32 window to read string via Data.dump /Byte
+        result = _read_window(dbg, f"Data.dump {address}++0x{max_length - 1:X} /Byte")
+        if not result.strip():
+            return f"No data at {address}"
+
+        # Parse the hex dump to extract ASCII string
+        lines = result.strip().split("\n")
+        ascii_chars = []
+        for line in lines:
+            # Find the ASCII portion after the | separator
+            if "|" in line:
+                ascii_part = line.split("|")[-1].rstrip("|")
+                ascii_chars.append(ascii_part)
+
+        full_ascii = "".join(ascii_chars)
+        # Truncate at first null byte
+        null_pos = full_ascii.find("\x00")
+        if null_pos >= 0:
+            full_ascii = full_ascii[:null_pos]
+
+        return full_ascii if full_ascii else f"(empty string at {address})"
+    except ConnectionError:
+        raise
+    except Exception as e:
+        return f"Error reading string at {address}: {e}"

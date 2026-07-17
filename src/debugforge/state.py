@@ -52,7 +52,9 @@ class T32State:
         port = port or config.port
         protocol = protocol or config.protocol
 
-        self.debugger = t32.connect(node=node, port=port, protocol=protocol)
+        # t32.connect expects port as string for UDP protocol
+        port_str = str(port)
+        self.debugger = t32.connect(node=node, port=port_str, protocol=protocol)
         self.node = node
         self.port = port
         self.protocol = protocol

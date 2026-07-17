@@ -32,15 +32,17 @@ async def read_memory(
 
         hex_lines = []
         bytes_per_line = 16
+        # Parse the numeric address for display, stripping any access class prefix
+        try:
+            addr_val = int(address.lstrip("DPSBCadpsbc:"), 16)
+        except ValueError:
+            addr_val = 0
         for offset in range(0, len(data), bytes_per_line):
             chunk = data[offset:offset + bytes_per_line]
             hex_part = " ".join(f"{b:02X}" for b in chunk)
             ascii_part = "".join(chr(b) if 32 <= b < 127 else "." for b in chunk)
-            try:
-                addr_val = int(address, 16) + offset
-            except ValueError:
-                addr_val = offset
-            hex_lines.append(f"0x{addr_val:08X}: {hex_part:<48s} |{ascii_part}|")
+            display_addr = addr_val + offset if addr_val else offset
+            hex_lines.append(f"0x{display_addr:08X}: {hex_part:<48s} |{ascii_part}|")
 
         return "\n".join(hex_lines) if hex_lines else "No data read"
     except ConnectionError:
