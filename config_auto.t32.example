@@ -1,0 +1,34 @@
+; ============================================================
+; config_auto.t32 - DebugForge 远程调试配置模板
+;
+; 使用方法 (在远程电脑上):
+;   "C:\T32\bin\windows64\t32mtc.exe" -c "C:\T32\config_auto.t32"
+;
+; 或在现有 config.t32 末尾追加 RCL 配置段 (不破坏原有配置):
+;   RCL=NETTCP
+;   PORT=20000
+;   PACKLEN=4096
+;
+; 注意:
+;   - RCL=NETTCP 启用 TCP 远程控制 (PYRCL 需要)
+;   - PORT=20000 是默认端口，需与 debugforge.toml [connection] port 一致
+;   - PACKLEN=4096 建议开启，提高大数据传输效率
+;   - config_auto.t32 和 config.t32 可以共存，互不影响
+; ============================================================
+
+; TRACE32 系统配置
+OS=
+SYS=C:\T32
+TMP=C:\T32\tmp
+
+; ============================================================
+; Remote Control Layer (RCL) 配置
+; 启用 TCP 远程控制，让 PYRCL (lauterbach-trace32-rcl) 能连接
+; ============================================================
+
+RCL=NETTCP
+PORT=20000
+PACKLEN=4096
+
+; 允许多个客户端同时连接 (调试时建议开启)
+RCLMULTIPLE=ENABLE
